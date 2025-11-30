@@ -1,6 +1,6 @@
 {
   "name": "ps2-archive-collection",
-  "version": "3.1.4",
+  "version": "3.2.0",
   "description": "A React-based PS2 game archive collection with immersive audio and visual effects",
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.22",
+    "firebase": "^12.6.0",
     "lucide-react": "^0.555.0",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
