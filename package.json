@@ -1,0 +1,30 @@
+{
+  "name": "ps2-archive-collection",
+  "version": "3.1.4",
+  "description": "A React-based PS2 game archive collection with immersive audio and visual effects",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "ps2",
+    "archive",
+    "react",
+    "audio",
+    "visualization"
+  ],
+  "author": "Anacondy",
+  "license": "MIT",
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.22",
+    "lucide-react": "^0.555.0",
+    "postcss": "^8.5.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^3.4.18",
+    "vite": "^7.2.4"
+  }
+}
