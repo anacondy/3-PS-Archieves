@@ -19,7 +19,13 @@ import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, o
  *    - VITE_FIREBASE_MESSAGING_SENDER_ID
  *    - VITE_FIREBASE_APP_ID
  * 
- * IMPORTANT: Set Firestore security rules to allow read/write:
+ * ⚠️ SECURITY WARNING: The example rules below allow PUBLIC access to all data.
+ * This is suitable for public game archives where data sharing is intended.
+ * For private or sensitive data, implement proper authentication:
+ * - Firebase Authentication: https://firebase.google.com/docs/auth
+ * - Secure Rules: https://firebase.google.com/docs/firestore/security/get-started
+ * 
+ * Example public access rules (Firestore > Rules):
  * rules_version = '2';
  * service cloud.firestore {
  *   match /databases/{database}/documents {
@@ -61,6 +67,9 @@ if (isFirebaseConfigured()) {
         console.warn('Firestore persistence unavailable: multiple tabs open');
       } else if (err.code === 'unimplemented') {
         console.warn('Firestore persistence unavailable: browser not supported');
+      } else {
+        // Log unexpected errors for debugging
+        console.warn('Firestore persistence error:', err.code, err.message);
       }
     });
     

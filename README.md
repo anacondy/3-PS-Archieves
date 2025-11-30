@@ -127,7 +127,17 @@ service cloud.firestore {
   }
 }
 ```
-> ⚠️ **Note:** These rules allow public access. For production, implement proper authentication.
+
+> ⚠️ **SECURITY WARNING:** 
+> 
+> The rules above allow **PUBLIC read and write access** to all data. This is appropriate for:
+> - Public game archives where anyone can view and contribute
+> - Development and testing environments
+> - Shared collections where data is non-sensitive
+> 
+> **For private or sensitive data**, implement Firebase Authentication:
+> - [Firebase Auth Documentation](https://firebase.google.com/docs/auth)
+> - [Firestore Security Rules Guide](https://firebase.google.com/docs/firestore/security/get-started)
 
 ### 5. Configure Environment Variables
 Create a `.env` file in the project root:

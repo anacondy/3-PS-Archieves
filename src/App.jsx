@@ -894,8 +894,17 @@ export default function App() {
         
         if (firebaseGames.length > 0) {
           // Merge Firebase games with default games (prioritize Firebase data)
-          const firebaseIds = new Set(firebaseGames.map(g => g.id?.toString()));
-          const defaultGamesToKeep = initialGamesData.filter(g => !firebaseIds.has(g.id?.toString()));
+          // Filter out games with valid IDs only to avoid undefined comparison issues
+          const firebaseIds = new Set(
+            firebaseGames
+              .filter(g => g.id !== undefined && g.id !== null)
+              .map(g => g.id.toString())
+          );
+          const defaultGamesToKeep = initialGamesData.filter(g => {
+            // Keep default games that don't have a matching ID in Firebase data
+            if (g.id === undefined || g.id === null) return true;
+            return !firebaseIds.has(g.id.toString());
+          });
           setGames([...firebaseGames, ...defaultGamesToKeep]);
         }
         // If no Firebase games, keep the current state (localStorage or defaults)
@@ -905,7 +914,12 @@ export default function App() {
       unsubscribeTracks = subscribeToTracks((firebaseTracks) => {
         if (firebaseTracks.length > 0) {
           // Merge with existing tracks (keep default synth tracks)
-          const synthTracks = availableTracks.filter(t => t.type !== 'file' && !t.id?.toString().startsWith('custom'));
+          const synthTracks = availableTracks.filter(t => {
+            // Keep tracks that are not file uploads and not custom tracks
+            if (t.type === 'file') return false;
+            if (t.id !== undefined && t.id !== null && t.id.toString().startsWith('custom')) return false;
+            return true;
+          });
           setAvailableTracks([...firebaseTracks, ...synthTracks]);
         }
       });
