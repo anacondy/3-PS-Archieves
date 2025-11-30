@@ -36,9 +36,17 @@ A React-based PS2 game archive collection featuring immersive audio visualizatio
 - Edit existing entries or create new ones
 
 ### 💾 Data Persistence
-- Automatic localStorage saving
+- Automatic localStorage saving for local sessions
+- **Cross-device synchronization** via Firebase (optional)
+- Each game cover has a unique session ID with timestamp and metadata
 - Metadata preserved across sessions (images, audio, fonts, descriptions)
 - Edit mode retrieves all saved data
+
+### ☁️ Cross-Device Sync (Firebase)
+- Real-time synchronization across multiple devices and browsers
+- Automatic offline support with local fallback
+- Unique session IDs for each game cover entry
+- Stores images, music, timestamps, and all metadata
 
 ### 📱 Mobile Optimization
 - Responsive grid (2-5 columns based on screen size)
@@ -84,6 +92,56 @@ npm run build
 - **Tailwind CSS 3** - Styling
 - **Lucide React** - Icons
 - **Web Audio API** - Audio Engine
+- **Firebase** - Cross-device data synchronization (optional)
+
+## Firebase Setup (For Cross-Device Sync)
+
+To enable data synchronization across different devices and browsers:
+
+### 1. Create a Firebase Project
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Click "Create a project" and follow the wizard
+3. Once created, go to Project Settings > General
+
+### 2. Add a Web App
+1. In Project Settings, scroll to "Your apps" section
+2. Click the web icon (</>) to add a web app
+3. Give it a name and register the app
+4. Copy the `firebaseConfig` object values
+
+### 3. Enable Firestore Database
+1. In Firebase Console, go to Build > Firestore Database
+2. Click "Create database"
+3. Choose production mode or test mode
+4. Select a location closest to your users
+
+### 4. Set Security Rules (for public access)
+In Firestore > Rules, set:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+> ⚠️ **Note:** These rules allow public access. For production, implement proper authentication.
+
+### 5. Configure Environment Variables
+Create a `.env` file in the project root:
+```bash
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### 6. Deploy with Environment Variables
+For GitHub Pages, add these as repository secrets and update the workflow, or use a hosting platform that supports environment variables.
 
 ## Browser Support
 

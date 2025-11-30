@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Disc, Gamepad2, Activity, Terminal, Database, Cpu, Lock, User, Calendar, List, Settings, Image as ImageIcon, Music, Play, Pause, RotateCcw, Check, ZoomIn, Save, UploadCloud, Plus, Type, AlignLeft, ToggleLeft, ToggleRight, Clock, LayoutTemplate, ArrowUp, ArrowDown, Minus, Eye, Edit3 } from 'lucide-react';
+import { subscribeToGames, subscribeToTracks, saveGame, updateGame, saveTrack, generateSessionId, isFirebaseAvailable } from './firebase';
 
 /* -------------------------------------------------------------------------- */
 /* CUSTOM CSS & FONTS                                                         */
@@ -167,12 +168,12 @@ const useSystemStats = () => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* LOCAL STORAGE PERSISTENCE                                                  */
+/* LOCAL STORAGE PERSISTENCE (FALLBACK)                                       */
 /* -------------------------------------------------------------------------- */
 const STORAGE_KEY = 'ps2-archive-games';
 const TRACKS_STORAGE_KEY = 'ps2-archive-tracks';
 
-const saveToStorage = (games, tracks) => {
+const saveToLocalStorage = (games, tracks) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
     // Only save non-default tracks
@@ -183,7 +184,7 @@ const saveToStorage = (games, tracks) => {
   }
 };
 
-const loadFromStorage = (defaultGames, defaultTracks) => {
+const loadFromLocalStorage = (defaultGames, defaultTracks) => {
   try {
     const savedGames = localStorage.getItem(STORAGE_KEY);
     const savedTracks = localStorage.getItem(TRACKS_STORAGE_KEY);
@@ -856,13 +857,17 @@ const SettingsPanel = ({ onClose, playPreview, availableTracks, onAddTrack, onSa
 /* MAIN APP                                                                   */
 /* -------------------------------------------------------------------------- */
 export default function App() {
-  // Load persisted data on mount
+  // State for Firebase connection status
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
+  
+  // Load initial data from localStorage as fallback, then sync with Firebase
   const [games, setGames] = useState(() => {
-    const { games: loadedGames } = loadFromStorage(initialGamesData, initialGamesData);
+    const { games: loadedGames } = loadFromLocalStorage(initialGamesData, initialGamesData);
     return loadedGames;
   });
   const [availableTracks, setAvailableTracks] = useState(() => {
-    const { tracks: loadedTracks } = loadFromStorage(initialGamesData, initialGamesData);
+    const { tracks: loadedTracks } = loadFromLocalStorage(initialGamesData, initialGamesData);
     return loadedTracks;
   });
   const [selectedGame, setSelectedGame] = useState(null);
@@ -876,9 +881,49 @@ export default function App() {
   const registryProgress = useMultiKeyTrigger(['c', 'o', '2'], () => { setShowRegistry(true); playUiSound('open'); }, 2000);
   const settingsProgress = useMultiKeyTrigger(['f', 's'], () => { setShowSettings(true); playUiSound('open'); }, 2000);
 
-  // Persist data whenever games or tracks change
+  // Subscribe to Firebase for real-time updates across devices
   useEffect(() => {
-    saveToStorage(games, availableTracks);
+    let unsubscribeGames = () => {};
+    let unsubscribeTracks = () => {};
+
+    try {
+      // Subscribe to games collection
+      unsubscribeGames = subscribeToGames((firebaseGames) => {
+        setIsConnected(true);
+        setConnectionError(null);
+        
+        if (firebaseGames.length > 0) {
+          // Merge Firebase games with default games (prioritize Firebase data)
+          const firebaseIds = new Set(firebaseGames.map(g => g.id?.toString()));
+          const defaultGamesToKeep = initialGamesData.filter(g => !firebaseIds.has(g.id?.toString()));
+          setGames([...firebaseGames, ...defaultGamesToKeep]);
+        }
+        // If no Firebase games, keep the current state (localStorage or defaults)
+      });
+
+      // Subscribe to tracks collection
+      unsubscribeTracks = subscribeToTracks((firebaseTracks) => {
+        if (firebaseTracks.length > 0) {
+          // Merge with existing tracks (keep default synth tracks)
+          const synthTracks = availableTracks.filter(t => t.type !== 'file' && !t.id?.toString().startsWith('custom'));
+          setAvailableTracks([...firebaseTracks, ...synthTracks]);
+        }
+      });
+    } catch (error) {
+      console.error('Firebase connection error:', error);
+      setConnectionError(error.message);
+      // Fall back to localStorage data
+    }
+
+    return () => {
+      unsubscribeGames();
+      unsubscribeTracks();
+    };
+  }, []);
+
+  // Also save to localStorage as backup
+  useEffect(() => {
+    saveToLocalStorage(games, availableTracks);
   }, [games, availableTracks]);
 
   const handleGameSelect = (game) => { playUiSound('open'); setSelectedGame(game); };
@@ -893,14 +938,60 @@ export default function App() {
     }
   };
 
-  const handleAddTrack = (newTrack) => setAvailableTracks(prev => [newTrack, ...prev]);
+  const handleAddTrack = async (newTrack) => {
+    // Generate a session ID for the new track
+    const trackWithSession = {
+      ...newTrack,
+      sessionId: generateSessionId(),
+      createdAt: Date.now()
+    };
+    
+    // Add to local state immediately for responsive UI
+    setAvailableTracks(prev => [trackWithSession, ...prev]);
+    
+    // Save to Firebase for cross-device sync
+    try {
+      await saveTrack(trackWithSession);
+    } catch (error) {
+      console.error('Failed to save track to Firebase:', error);
+      // Data is still in localStorage and local state, so user won't lose it
+    }
+  };
   
-  const handleSaveGame = (newGame, targetSlot) => {
+  const handleSaveGame = async (newGame, targetSlot) => {
+    // Add session ID and metadata for cross-device identification
+    const gameWithSession = {
+      ...newGame,
+      sessionId: newGame.sessionId || generateSessionId(),
+      createdAt: newGame.createdAt || Date.now(),
+      updatedAt: Date.now()
+    };
+
+    // Update local state immediately for responsive UI
+    if (targetSlot === 'new') {
+      setGames(prev => [gameWithSession, ...prev]);
+    } else {
+      setGames(prev => prev.map(g => g.id.toString() === targetSlot.toString() ? gameWithSession : g));
+    }
+
+    // Save to Firebase for cross-device sync
+    try {
       if (targetSlot === 'new') {
-          setGames(prev => [newGame, ...prev]);
+        await saveGame(gameWithSession);
       } else {
-          setGames(prev => prev.map(g => g.id.toString() === targetSlot.toString() ? newGame : g));
+        // Find the existing game's Firestore ID
+        const existingGame = games.find(g => g.id.toString() === targetSlot.toString());
+        if (existingGame?.firestoreId) {
+          await updateGame(existingGame.firestoreId, gameWithSession);
+        } else {
+          // If no Firestore ID exists, save as new
+          await saveGame(gameWithSession);
+        }
       }
+    } catch (error) {
+      console.error('Failed to save game to Firebase:', error);
+      // Data is still in localStorage and local state, so user won't lose it
+    }
   };
 
   // Render Header in Grid/Zoom

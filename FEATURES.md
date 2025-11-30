@@ -1,6 +1,6 @@
 # PS2 Archive Collection - Feature Documentation
 
-## Version: 3.1.4 (STABLE)
+## Version: 3.2.0 (STABLE)
 **Last Updated:** November 2025
 
 ---
@@ -14,6 +14,7 @@
 | Build Tool | Vite 7 |
 | Icons | Lucide React |
 | Audio | Web Audio API |
+| Cloud Sync | Firebase Firestore (optional) |
 
 ---
 
@@ -28,10 +29,42 @@
 
 ## 3. Data Persistence
 
-### localStorage Implementation
+### Hybrid Storage System
+The application uses a hybrid approach for maximum reliability:
+
+#### Local Storage (Always Active)
 - `ps2-archive-games` - Complete game list with metadata
 - `ps2-archive-tracks` - Custom uploaded audio tracks
 - Preserves: images (Base64), audio configs, fonts, descriptions
+- Works offline and provides instant access
+
+#### Firebase Firestore (Optional - Cross-Device Sync)
+- Real-time synchronization across all devices
+- Unique session IDs for each game cover
+- Automatic conflict resolution
+- Offline persistence with sync on reconnect
+
+### Session ID Format
+Each game cover entry gets a unique identifier:
+```
+SESSION-{timestamp}-{random4chars}-{random4chars}
+```
+Example: `SESSION-1701234567890-A1B2-C3D4`
+
+### Metadata Structure
+```javascript
+{
+  sessionId: "SESSION-...",
+  createdAt: 1701234567890,
+  updatedAt: 1701234567890,
+  metadata: {
+    hasCustomImage: true,
+    hasAudioTrack: true,
+    imageSize: 123456,
+    timestamp: "2025-11-30T12:00:00.000Z"
+  }
+}
+```
 
 ---
 
