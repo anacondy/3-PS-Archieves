@@ -1,5 +1,9 @@
 # PS2 Archive Collection
 
+[![Deploy to GitHub Pages](https://github.com/anacondy/3-PS-Archieves/actions/workflows/deploy.yml/badge.svg)](https://github.com/anacondy/3-PS-Archieves/actions/workflows/deploy.yml)
+
+🔗 **Live Demo:** [https://anacondy.github.io/3-PS-Archieves/](https://anacondy.github.io/3-PS-Archieves/)
+
 A React-based PS2 game archive collection featuring immersive audio visualization, real-time system monitoring, and a comprehensive settings panel for customizing game covers.
 
 ![Main Grid View](https://github.com/user-attachments/assets/bec03d26-281c-4046-824b-14e0d457459a)
